@@ -11,11 +11,10 @@ app.get("/scrape", async (req, res) => {
 
   const crawler = new CheerioCrawler({
     maxRequestsPerCrawl: 1,
-    additionalHttpHeaders: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    },
     async requestHandler({ $, request }) {
+      console.log(`Scraping ${request.url}`);
+      console.log(`Page title: ${$("title").text()}`);
+
       // Select all visible text from <body>, excluding scripts, styles, and hidden elements
       $("body")
         .find("*")
@@ -23,17 +22,17 @@ app.get("/scrape", async (req, res) => {
         .each((index, element) => {
           const text = $(element).text().trim();
           if (text && text.length > 3) {
-            // Exclude very short text (e.g., icons, whitespace)
+            // Exclude short text
             data.push({
               url: request.url,
               text: text,
-              tag: $(element).prop("tagName").toLowerCase(), // Store tag for context
+              tag: $(element).prop("tagName").toLowerCase(),
               html: $(element).html() || "",
             });
           }
         });
 
-      console.log(`Scraping ${request.url}: Found ${data.length} text items`);
+      console.log(`Found ${data.length} text items`);
     },
     failedRequestHandler({ request, error }) {
       console.error(`Failed to scrape ${request.url}: ${error.message}`);
