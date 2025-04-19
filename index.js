@@ -6,13 +6,12 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.get("/scrape", async (req, res) => {
-  const targetUrl = req.query.url || "https://example.com"; // Default URL or pass via query
+  const targetUrl = req.query.url || "https://example.com";
   const data = [];
 
   const crawler = new CheerioCrawler({
-    maxRequestsPerCrawl: 1, // Limit to one page for simplicity
+    maxRequestsPerCrawl: 1,
     async requestHandler({ $, request }) {
-      // Extract all <a> tags (links)
       $("a").each((index, element) => {
         data.push({
           url: $(element).attr("href") || "",
@@ -24,7 +23,7 @@ app.get("/scrape", async (req, res) => {
   });
 
   await crawler.run([targetUrl]);
-  res.json(data); // Return JSON to Power Automate
+  res.json(data);
 });
 
 app.listen(port, () => {
