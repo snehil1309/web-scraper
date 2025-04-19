@@ -14,25 +14,43 @@ app.get("/scrape", async (req, res) => {
     async requestHandler({ $, request }) {
       console.log(`Scraping ${request.url}`);
       console.log(`Page title: ${$("title").text()}`);
+      console.log(`Body length: ${$("body").html()?.length || 0} characters`);
 
-      // Select all visible text from <body>, excluding scripts, styles, and hidden elements
-      $("body")
-        .find("*")
-        .not('script, style, [style*="display:none"]')
-        .each((index, element) => {
+      // Try extracting text from common elements
+      $("h1, h2, h3, p, a, span, div").each((index, element) => {
+        const text = $(element).text().trim();
+        if (text && text.length > 1) {
+          // Relaxed filter
+          data.push({
+            url: request.url,
+            text: text,
+            tag: $(element).prop("tagName").toLowerCase(),
+            html: $(element).html() || "",
+          });
+        }
+      });
+
+      // Fall back to <a> tags if no text found (matches original working script)
+      if (data.length === 0) {
+        $("a").each((index, element) => {
           const text = $(element).text().trim();
-          if (text && text.length > 3) {
-            // Exclude short text
+          if (text) {
             data.push({
-              url: request.url,
+              url: $(element).attr("href") || request.url,
               text: text,
-              tag: $(element).prop("tagName").toLowerCase(),
+              tag: "a",
               html: $(element).html() || "",
             });
           }
         });
+      }
 
       console.log(`Found ${data.length} text items`);
+      if (data.length === 0) {
+        console.log(
+          `Raw HTML sample: ${$("body").html()?.slice(0, 200) || "No HTML"}...`
+        );
+      }
     },
     failedRequestHandler({ request, error }) {
       console.error(`Failed to scrape ${request.url}: ${error.message}`);
